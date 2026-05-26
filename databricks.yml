@@ -17,7 +17,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://dbc-a7db973c-45ee.cloud.databricks.com
+      host: https://databricks.com
     variables:
       catalog: enterprise_dev
       schema: taxi_pipeline
@@ -36,7 +36,7 @@ targets:
   qa:
     mode: production
     workspace:
-      host: https://dbc-a7db973c-45ee.cloud.databricks.com
+      host: https://databricks.com
     variables:
       catalog: enterprise_qa
       schema: taxi_pipeline
@@ -55,8 +55,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: https://dbc-a7db973c-45ee.cloud.databricks.com
-      # Fixed trailing path syntax and removed typos
+      host: https://databricks.com
       root_path: /Workspace/Users/sathyarajesh007@://gmail.com{bundle.name}/${bundle.target}
     variables:
       catalog: enterprise_prod
