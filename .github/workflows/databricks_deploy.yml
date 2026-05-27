@@ -1,0 +1,38 @@
+name: "Databricks CI/CD Code Promotion Pipeline"
+
+# 1. Trigger automation when code is merged into main (QA) or release (Prod)
+on:
+  push:
+    branches:
+      - main
+      - release
+
+jobs:
+  deploy:
+    name: "Compile and Deploy Asset Bundle"
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Clone your GitHub repository files into the automation worker node
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install the official Databricks CLI inside the worker container
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@main
+
+      # Step 3: Automatically deploy code to QA when pushing to the main branch
+      - name: Deploy to QA Environment
+        if: github.ref == 'refs/heads/main'
+        run: databricks bundle deploy --target qa
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      # Step 4: Automatically deploy code to Prod when pushing to the release branch
+      - name: Deploy to Production Environment
+        if: github.ref == 'refs/heads/release'
+        run: databricks bundle deploy --target prod
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
