@@ -31,7 +31,7 @@ targets:
           serverless: true 
           libraries:
             - notebook:
-                path: ./src/sample_notebook.ipynb
+                path: ./src/pipeline.py
 
   qa:
     mode: production
