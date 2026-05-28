@@ -11,7 +11,12 @@ variables:
   schema:
     description: "The target execution database schema"
     default: "taxi_pipeline"
+  deployer_service_principal_id:
+    description: "Application ID of the Databricks service principal used by CI/CD to deploy and run QA/Prod pipelines"
 
+# QA and Prod targets intentionally use production mode so CI/CD updates the
+# shared environment resources in-place. Production-mode bundles need a stable
+# workspace root, explicit permissions, and a run identity.
 targets:
   dev:
     mode: development
@@ -28,7 +33,7 @@ targets:
           target: ${var.schema}
           catalog: ${var.catalog}
           channel: "current"
-          serverless: true 
+          serverless: true
           libraries:
             - notebook:
                 path: ./src/pipeline.py
@@ -37,9 +42,15 @@ targets:
     mode: production
     workspace:
       host: https://dbc-a7db973c-45ee.cloud.databricks.com
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: enterprise_qa
       schema: taxi_pipeline
+    run_as:
+      service_principal_name: ${var.deployer_service_principal_id}
+    permissions:
+      - service_principal_name: ${var.deployer_service_principal_id}
+        level: CAN_MANAGE
     resources:
       pipelines:
         qa_taxi_lakeflow_pipeline:
@@ -56,12 +67,15 @@ targets:
     mode: production
     workspace:
       host: https://dbc-a7db973c-45ee.cloud.databricks.com
-      # FIXED: Clean workspace shared folder path completely free of typos or extra characters
-      root_path: /Shared/.bundle/${bundle.name}/${bundle.target}
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: enterprise_prod
       schema: taxi_pipeline
+    run_as:
+      service_principal_name: ${var.deployer_service_principal_id}
     permissions:
+      - service_principal_name: ${var.deployer_service_principal_id}
+        level: CAN_MANAGE
       - user_name: sathyarajesh007@gmail.com
         level: CAN_MANAGE
     resources:
