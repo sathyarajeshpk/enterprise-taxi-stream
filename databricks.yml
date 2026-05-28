@@ -50,7 +50,7 @@ targets:
           serverless: true
           libraries:
             - notebook:
-                path: ./src/sample_notebook.ipynb
+                path: ./src/pipeline.py
 
   prod:
     mode: production
@@ -74,4 +74,4 @@ targets:
           serverless: true
           libraries:
             - notebook:
-                path: ./src/sample_notebook.ipynb
+                path: ./src/pipeline.py
