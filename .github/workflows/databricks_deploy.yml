@@ -1,6 +1,6 @@
 name: "Databricks CI/CD Code Promotion Pipeline"
 
-# 1. Trigger automation when code is merged into main (QA) or release (Prod)
+# Trigger automation when code is merged into main (QA) or release (Prod)
 on:
   push:
     branches:
@@ -9,8 +9,13 @@ on:
 
 jobs:
   deploy:
-    name: "Compile and Deploy Asset Bundle"
+    name: "Validate and Deploy Asset Bundle"
     runs-on: ubuntu-latest
+    env:
+      DATABRICKS_AUTH_TYPE: oauth-m2m
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+      BUNDLE_VAR_deployer_service_principal_id: ${{ secrets.DATABRICKS_CLIENT_ID }}
 
     steps:
       # Step 1: Clone your GitHub repository files into the automation worker node
@@ -21,20 +26,21 @@ jobs:
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
-      # Step 3: Automatically deploy code to QA when pushing to the main branch
+      # Step 3: Validate bundle configuration before attempting a deployment
+      - name: Validate QA Bundle
+        if: github.ref == 'refs/heads/main'
+        run: databricks bundle validate --target qa
+
+      - name: Validate Production Bundle
+        if: github.ref == 'refs/heads/release'
+        run: databricks bundle validate --target prod
+
+      # Step 4: Automatically deploy code to QA when pushing to the main branch
       - name: Deploy to QA Environment
         if: github.ref == 'refs/heads/main'
         run: databricks bundle deploy --target qa
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
 
-      # Step 4: Automatically deploy code to Prod when pushing to the release branch
+      # Step 5: Automatically deploy code to Prod when pushing to the release branch
       - name: Deploy to Production Environment
         if: github.ref == 'refs/heads/release'
         run: databricks bundle deploy --target prod
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
