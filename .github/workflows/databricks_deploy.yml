@@ -1,40 +1,31 @@
 name: "Databricks CI/CD Code Promotion Pipeline"
 
-# 1. Trigger automation when code is merged into main (QA) or release (Prod)
+# Rebuild the Databricks dev resources from the protected main branch. The manual
+# trigger lets you redeploy after cleaning up resources in the Databricks UI.
 on:
   push:
     branches:
       - main
-      - release
+  workflow_dispatch:
 
 jobs:
-  deploy:
-    name: "Compile and Deploy Asset Bundle"
+  deploy-dev:
+    name: "Validate and Deploy Dev Bundle"
     runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
 
     steps:
-      # Step 1: Clone your GitHub repository files into the automation worker node
       - name: Checkout Code Repository
         uses: actions/checkout@v4
 
-      # Step 2: Install the official Databricks CLI inside the worker container
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
-      # Step 3: Automatically deploy code to QA when pushing to the main branch
-      - name: Deploy to QA Environment
-        if: github.ref == 'refs/heads/main'
-        run: databricks bundle deploy --target qa
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+      - name: Validate Dev Bundle
+        run: databricks bundle validate --target dev
 
-      # Step 4: Automatically deploy code to Prod when pushing to the release branch
-      - name: Deploy to Production Environment
-        if: github.ref == 'refs/heads/release'
-        run: databricks bundle deploy --target prod
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+      - name: Deploy Dev Bundle
+        run: databricks bundle deploy --target dev
